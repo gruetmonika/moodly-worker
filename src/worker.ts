@@ -27,17 +27,14 @@ interface Job {
 async function generatePhoto(photoUrl: string, prompt: string): Promise<Buffer> {
   const FACE_PREFIX =
     "Preserve exact face, facial features, eye color, hair color, skin tone from reference image. Keep identical facial structure. ";
-  const NEGATIVE =
-    "text, watermarks, black borders, logo, distorted face, crossed eyes, asymmetric eyes, double face, blurry face, cartoon";
 
   const result = await fal.run("fal-ai/nano-banana-pro/edit", {
     input: {
       prompt: FACE_PREFIX + prompt,
       image_urls: [photoUrl],
-      negative_prompt: NEGATIVE,
       num_images: 1,
       image_size: "portrait_4_3",
-    },
+    } as any,
   }) as any;
 
   const imageUrl: string = result.images?.[0]?.url;
@@ -75,7 +72,6 @@ export async function processJob(supabase: SupabaseClient, job: Job): Promise<vo
     const collageUrl = await uploadToR2(collageBuffer, collageKey, "image/jpeg");
 
     resultUrls[item.id] = { photos: photoUrls, collage: collageUrl };
-
     await supabase.from("jobs").update({ result_urls: resultUrls }).eq("id", job.id);
   }
 
