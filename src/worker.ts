@@ -1,4 +1,4 @@
-import * as fal from "@fal-ai/serverless-client";
+import * as fal from "@fal-ai/client";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { uploadToR2 } from "./storage";
 import { createCollage } from "./collage";
@@ -26,7 +26,6 @@ interface Job {
   cart: CartItem[];
 }
 
-// ── GENEROWANIE JEDNEGO ZDJĘCIA ──────────────────────────────
 async function generatePhoto(
   photoUrl: string,
   prompt: string
@@ -39,18 +38,15 @@ async function generatePhoto(
     "text, watermarks, black borders, logo, distorted face, " +
     "crossed eyes, asymmetric eyes, double face, blurry face, cartoon";
 
-  const result = await (fal.subscribe as Function)(
-    "fal-ai/nano-banana-pro/edit",
-    {
-      input: {
-        prompt: FACE_PREFIX + prompt,
-        image_urls: [photoUrl],
-        negative_prompt: NEGATIVE,
-        num_images: 1,
-        image_size: "portrait_4_3",
-      },
-    }
-  );
+  const result = await fal.subscribe("fal-ai/nano-banana-pro/edit", {
+    input: {
+      prompt: FACE_PREFIX + prompt,
+      image_urls: [photoUrl],
+      negative_prompt: NEGATIVE,
+      num_images: 1,
+      image_size: "portrait_4_3",
+    },
+  }) as any;
 
   const imageUrl: string = result.images?.[0]?.url;
   if (!imageUrl) throw new Error("Brak URL zdjęcia z fal.ai");
@@ -60,7 +56,6 @@ async function generatePhoto(
   return Buffer.from(await res.arrayBuffer());
 }
 
-// ── PRZETWARZANIE CAŁEGO JOBA ────────────────────────────────
 export async function processJob(
   supabase: SupabaseClient,
   job: Job
@@ -72,7 +67,6 @@ export async function processJob(
 
     const photoBuffers: Buffer[] = [];
 
-    // Generuj 9 zdjęć sekwencyjnie (fal.ai ma rate limits)
     for (let i = 0; i < PHOTOS_PER_VARIANT; i++) {
       console.log(`     Zdjęcie ${i + 1}/${PHOTOS_PER_VARIANT}...`);
       const prompt = getPrompt(item.climate, item.variant, i);
@@ -80,7 +74,6 @@ export async function processJob(
       photoBuffers.push(buf);
     }
 
-    // Upload 9 zdjęć do R2
     const photoUrls: string[] = [];
     for (let i = 0; i < photoBuffers.length; i++) {
       const key = `orders/${job.order_id}/${item.climate}-${item.variant}/photo-${i + 1}.jpg`;
@@ -88,7 +81,6 @@ export async function processJob(
       photoUrls.push(url);
     }
 
-    // Stwórz kolaż 9:16
     console.log(`     Tworzę kolaż 9:16...`);
     const collageBuffer = await createCollage(photoBuffers);
     const collageKey    = `orders/${job.order_id}/${item.climate}-${item.variant}/collage-9x16.jpg`;
@@ -96,13 +88,11 @@ export async function processJob(
 
     resultUrls[item.id] = { photos: photoUrls, collage: collageUrl };
 
-    // Zapisz postęp w Supabase
     await supabase
       .from("jobs")
       .update({ result_urls: resultUrls })
       .eq("id", job.id);
   }
 
-  // Wyślij email z linkami
   await sendDeliveryEmail(job.email, job.cart, resultUrls);
 }
