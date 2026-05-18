@@ -31,7 +31,7 @@ async function generatePhoto(photoUrl: string, prompt: string): Promise<Buffer> 
   const result = await fal.run("fal-ai/nano-banana-pro/edit", {
     input: {
       prompt: FACE_PREFIX + prompt,
-      image_urls: [photoUrl],
+      image_url: photoUrl,
       num_images: 1,
       image_size: "portrait_4_3",
     } as any,
