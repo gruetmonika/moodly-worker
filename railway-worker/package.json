@@ -1,0 +1,27 @@
+{
+  "name": "moodly-worker",
+  "version": "1.0.0",
+  "description": "MOODLY — background worker for AI image generation",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@fal-ai/serverless-client": "^0.7.6",
+    "@supabase/supabase-js": "^2.44.0",
+    "node-fetch": "^3.3.2",
+    "resend": "^3.3.0",
+    "sharp": "^0.33.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
